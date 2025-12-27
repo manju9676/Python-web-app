@@ -9,6 +9,8 @@ AUTH_URL = os.getenv("AUTH_URL", "http://auth_service:5001")
 BOOK_URL = os.getenv("BOOK_URL", "http://book_service:5002")
 BORROW_URL = os.getenv("BORROW_URL", "http://borrow_service:5003")
 
+REQUEST_TIMEOUT = 5  # seconds
+
 
 @app.route("/")
 def home():
@@ -25,27 +27,48 @@ def signup():
             "email": request.form["email"],
             "password": request.form["password"]
         }
-        res = requests.post(f"{AUTH_URL}/signup", json=data)
-        if res.status_code == 201:
-            flash("Signup successful!", "success")
-            return redirect(url_for("signin"))
-        else:
-            flash("Signup failed", "danger")
+        try:
+            res = requests.post(
+                f"{AUTH_URL}/signup",
+                json=data,
+                timeout=REQUEST_TIMEOUT
+            )
+            if res.status_code == 201:
+                flash("Signup successful!", "success")
+                return redirect(url_for("signin"))
+            else:
+                flash(res.json().get("message", "Signup failed"), "danger")
+        except requests.exceptions.RequestException:
+            flash("Auth service is unavailable", "danger")
+
     return render_template("signup.html")
+
 
 @app.route("/signin", methods=["GET", "POST"])
 def signin():
     if request.method == "POST":
-        data = {"email": request.form["email"], "password": request.form["password"]}
-        res = requests.post(f"{AUTH_URL}/signin", json=data)
-        if res.status_code == 200:
-            user = res.json()
-            session["user_id"] = user["user_id"]
-            session["name"] = user["name"]
-            return redirect(url_for("books"))
-        else:
-            flash("Invalid credentials", "danger")
+        data = {
+            "email": request.form["email"],
+            "password": request.form["password"]
+        }
+        try:
+            res = requests.post(
+                f"{AUTH_URL}/signin",
+                json=data,
+                timeout=REQUEST_TIMEOUT
+            )
+            if res.status_code == 200:
+                user = res.json()
+                session["user_id"] = user["user_id"]
+                session["name"] = user["name"]
+                return redirect(url_for("books"))
+            else:
+                flash("Invalid credentials", "danger")
+        except requests.exceptions.RequestException:
+            flash("Auth service is unavailable", "danger")
+
     return render_template("signin.html")
+
 
 @app.route("/logout")
 def logout():
@@ -58,26 +81,56 @@ def logout():
 def books():
     if "user_id" not in session:
         return redirect(url_for("signin"))
-    res = requests.get(f"{BOOK_URL}/books")
-    return render_template("books.html", books=res.json())
+    try:
+        res = requests.get(
+            f"{BOOK_URL}/books",
+            timeout=REQUEST_TIMEOUT
+        )
+        return render_template("books.html", books=res.json())
+    except requests.exceptions.RequestException:
+        flash("Book service unavailable", "danger")
+        return render_template("books.html", books=[])
 
 # ---------- BORROW ----------
 @app.route("/borrow/<int:book_id>")
 def borrow(book_id):
     if "user_id" not in session:
         return redirect(url_for("signin"))
-    data = {"user_id": session["user_id"], "book_id": book_id}
-    res = requests.post(f"{BORROW_URL}/borrow", json=data)
-    if res.status_code == 201:
-        flash("Book borrowed!", "success")
+
+    data = {
+        "user_id": session["user_id"],
+        "book_id": book_id
+    }
+    try:
+        res = requests.post(
+            f"{BORROW_URL}/borrow",
+            json=data,
+            timeout=REQUEST_TIMEOUT
+        )
+        if res.status_code == 201:
+            flash("Book borrowed!", "success")
+        else:
+            flash("Borrow failed", "danger")
+    except requests.exceptions.RequestException:
+        flash("Borrow service unavailable", "danger")
+
     return redirect(url_for("books"))
+
 
 @app.route("/mybooks")
 def mybooks():
     if "user_id" not in session:
         return redirect(url_for("signin"))
-    res = requests.get(f"{BORROW_URL}/mybooks/{session['user_id']}")
-    return render_template("borrow.html", books=res.json())
+    try:
+        res = requests.get(
+            f"{BORROW_URL}/mybooks/{session['user_id']}",
+            timeout=REQUEST_TIMEOUT
+        )
+        return render_template("borrow.html", books=res.json())
+    except requests.exceptions.RequestException:
+        flash("Borrow service unavailable", "danger")
+        return render_template("borrow.html", books=[])
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
