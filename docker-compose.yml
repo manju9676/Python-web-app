@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  database:
+  db:
     build: ./database
     env_file:
       - ./database/.env
@@ -15,7 +15,7 @@ services:
     ports:
       - "5001:5001"
     depends_on:
-      - database
+      - db
     networks:
       - library-network
 
@@ -24,7 +24,7 @@ services:
     ports:
       - "5002:5002"
     depends_on:
-      - database
+      - db
     networks:
       - library-network
 
@@ -33,7 +33,7 @@ services:
     ports:
       - "5003:5003"
     depends_on:
-      - database
+      - db
     networks:
       - library-network
 
