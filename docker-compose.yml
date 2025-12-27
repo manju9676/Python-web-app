@@ -1,57 +1,57 @@
----
+version: "3.9"
+
 services:
   database:
     build: ./database
-    container_name: mysql-database
     env_file:
       - ./database/.env
     ports:
       - "3306:3306"
     networks:
       - library-network
-  book-service:
-    build: ./book
-    container_name: book-service
-    ports:
-      - "5002:5002"
-    depends_on:
-      - database
-    networks:
-      - library-network
-  borrow-service:
-    build: ./borrow
-    container_name: borrow-service
-    ports:
-      - "5003:5003"
-    depends_on:
-      - database
-    networks:
-      - library-network
-  app-service:
-    build: .
-    container_name: app-service
-    ports:
-      - "5000:5000"
-    depends_on:
-      - auth-service
-      - book-service
-      - borrow-service
-    environment:
-      AUTH_URL: http://auth_service:5001
-      BOOK_URL: http://book_service:5002
-      BORROW_URL: http://borrow_service:5003
-    networks:
-      - library-network
-  auth-service:
+
+  auth_service:
     build: ./auth
-    container_name: auth-service
     ports:
       - "5001:5001"
     depends_on:
       - database
     networks:
       - library-network
+
+  book_service:
+    build: ./book
+    ports:
+      - "5002:5002"
+    depends_on:
+      - database
+    networks:
+      - library-network
+
+  borrow_service:
+    build: ./borrow
+    ports:
+      - "5003:5003"
+    depends_on:
+      - database
+    networks:
+      - library-network
+
+  app_service:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - auth_service
+      - book_service
+      - borrow_service
+    environment:
+      AUTH_URL: http://auth_service:5001
+      BOOK_URL: http://book_service:5002
+      BORROW_URL: http://borrow_service:5003
+    networks:
+      - library-network
+
 networks:
   library-network:
     driver: bridge
-  
