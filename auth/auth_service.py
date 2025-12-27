@@ -11,7 +11,7 @@ def get_db():
         user=os.getenv("DB_USER", "root"),
         password=os.getenv("DB_PASSWORD", "root"),
         database=os.getenv("DB_NAME", "digital_library")
-        AUTH_URL = os.getenv("AUTH_URL")
+
     )
 
 @app.route("/signup", methods=["POST"])

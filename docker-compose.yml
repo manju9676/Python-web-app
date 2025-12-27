@@ -9,15 +9,6 @@ services:
       - "3306:3306"
     networks:
       - library-network
-  auth-service:
-    build: ./auth
-    container_name: auth-service
-    ports:
-      - "5001:5001"
-    depends_on:
-      - database
-    networks:
-      - library-network
   book-service:
     build: ./book
     container_name: book-service
@@ -49,6 +40,15 @@ services:
       AUTH_URL: http://auth_service:5001
       BOOK_URL: http://book_service:5002
       BORROW_URL: http://borrow_service:5003
+    networks:
+      - library-network
+  auth-service:
+    build: ./auth
+    container_name: auth-service
+    ports:
+      - "5001:5001"
+    depends_on:
+      - database
     networks:
       - library-network
 networks:
